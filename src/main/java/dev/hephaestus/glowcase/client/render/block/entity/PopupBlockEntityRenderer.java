@@ -14,11 +14,12 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 
 public record PopupBlockEntityRenderer(BlockEntityRendererFactory.Context context) implements BlockEntityRenderer<PopupBlockEntity> {
 	public static Identifier ITEM_TEXTURE = Glowcase.id("textures/item/popup_block.png");
 
-	public void render(PopupBlockEntity entity, float f, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+	public void render(PopupBlockEntity entity, float f, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Vec3d cameraPos) {
 		if (entity.getWorld() == null || entity.getWorld().getBlockState(entity.getPos()).isAir()) return;
 		Camera camera = context.getRenderDispatcher().camera;
 		BlockEntityRenderUtil.renderBillboardPlaceholder(entity, ITEM_TEXTURE, 0.5F, matrices, vertexConsumers, camera);
@@ -36,7 +37,7 @@ public record PopupBlockEntityRenderer(BlockEntityRendererFactory.Context contex
 			matrices.translate(-context.getTextRenderer().getWidth(entity.title) / 2F, -4, -scale);
 			// Fixes shadow being rendered in front of actual text
 			matrices.scale(1, 1, -1);
-			context.getTextRenderer().draw(entity.title, 0, 0, 0xFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE);
+			context.getTextRenderer().draw(entity.title, 0, 0, 0xFFFFFFFF, true, matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE);
 		}
 		matrices.pop();
 	}

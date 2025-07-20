@@ -1,55 +1,29 @@
 package dev.hephaestus.glowcase.client;
 
-import java.util.List;
-import java.util.Stack;
-
-import com.google.common.collect.Lists;
 import dev.hephaestus.glowcase.Glowcase;
-import dev.hephaestus.glowcase.client.render.block.entity.BakedBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.ConfigLinkBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.EntityDisplayBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.HyperlinkBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.ItemAcceptorBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.ItemDisplayBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.ItemProviderBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.OutlineBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.ParticleDisplayBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.PopupBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.RecipeBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.ScreenBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.SoundPlayerBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.SpriteBlockEntityRenderer;
-import dev.hephaestus.glowcase.client.render.block.entity.TextBlockEntityRenderer;
+import dev.hephaestus.glowcase.client.render.block.entity.*;
 import dev.hephaestus.glowcase.client.render.item.ItemHandRenderer;
 import dev.hephaestus.glowcase.client.render.item.NoteItemHandRenderer;
 import dev.hephaestus.glowcase.client.render.item.TabletItemHandRenderer;
+import dev.hephaestus.glowcase.client.render.item.tint.GlowcaseTintSource;
 import dev.hephaestus.glowcase.client.util.NoteTextColorResource;
 import dev.hephaestus.glowcase.item.ScrollableItem;
 import dev.hephaestus.glowcase.mixin.HandledScreenInvoker;
 import dev.hephaestus.glowcase.packet.C2SSlotScrolled;
-import dev.hephaestus.glowcase.util.EmiUtils;
-import dev.hephaestus.glowcase.client.util.EmiWorldRenderUtils;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.InvalidateRenderStateCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.mixin.object.builder.client.ModelPredicateProviderRegistryAccessor;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.NbtComponent;
+import net.minecraft.client.render.item.tint.TintSourceTypes;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.ResourceType;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
@@ -57,8 +31,6 @@ public class GlowcaseClient implements ClientModInitializer {
 	public static final Boolean EMI_LOADED = FabricLoader.getInstance().isModLoaded("emi");
 	public static final ScreenImageCache screenImageCache = new ScreenImageCache();
 	public static final Identifier PROVIDER_CROSSHAIR_TEXTURE = Glowcase.id("hud/provider_crosshair");
-	// Use a stack so it can be more freely used if needed in more places
-	public static final Stack<Void> PREVENT_VEIL_DYNAMIC_BUFFER = new Stack<>();
 
 	private double accScroll = 0;
 
@@ -84,41 +56,14 @@ public class GlowcaseClient implements ClientModInitializer {
 		ItemHandRenderer.register(Glowcase.TABLET_ITEM.get().asItem(), new TabletItemHandRenderer());
 		ItemHandRenderer.register(Glowcase.NOTE_ITEM.get().asItem(), new NoteItemHandRenderer());
 
-		ColorProviderRegistry.ITEM.register((stack, index) -> {
-				NbtComponent component = stack.get(DataComponentTypes.BLOCK_ENTITY_DATA);
-				if (component == null) return 0xFFFFFF;
-				NbtCompound nbt = component.getNbt();
-				if (nbt != null) {
-					int color = nbt.getInt("color");
-					if (color != 0 && color != 0xFFFFFF) return color;
-				}
-				return 0xAA00AA;
-			},
-			Glowcase.TEXT_BLOCK_ITEM.get(),
-			Glowcase.HYPERLINK_BLOCK_ITEM.get(),
-			Glowcase.CONFIG_LINK_BLOCK_ITEM.get(),
-			Glowcase.ITEM_DISPLAY_BLOCK_ITEM.get(),
-			Glowcase.POPUP_BLOCK_ITEM.get(),
-			Glowcase.SCREEN_BLOCK_ITEM.get(),
-			Glowcase.SPRITE_BLOCK_ITEM.get(),
-			Glowcase.OUTLINE_BLOCK_ITEM.get(),
-			Glowcase.PARTICLE_DISPLAY_ITEM.get(),
-			Glowcase.SOUND_BLOCK_ITEM.get(),
-			Glowcase.ITEM_ACCEPTOR_BLOCK_ITEM.get(),
-			Glowcase.ITEM_PROVIDER_BLOCK_ITEM.get(),
-			Glowcase.ENTITY_DISPLAY_BLOCK_ITEM.get()
-		);
-
-		ColorProviderRegistry.ITEM.register((stack, index) -> stack.contains(DataComponentTypes.DYED_COLOR) ? 0xFF000000 | stack.get(DataComponentTypes.DYED_COLOR).rgb() : 0xFFFFFFFF,
-			Glowcase.COLLECTION_CASE_ITEM.get()
-		);
+		TintSourceTypes.ID_MAPPER.put(Glowcase.id("auto"), GlowcaseTintSource.CODEC);
 
 		WorldRenderEvents.AFTER_ENTITIES.register(BakedBlockEntityRenderer.Manager::render);
 		InvalidateRenderStateCallback.EVENT.register(BakedBlockEntityRenderer.Manager::reset);
 
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new NoteTextColorResource());
 
-		ModelPredicateProviderRegistryAccessor.callRegister(Identifier.of("glowcase:awakened"), (stack, world, entity, seed) -> {
+		/*ModelPredicateProviderRegistryAccessor.callRegister(Identifier.of("glowcase:awakened"), (stack, world, entity, seed) -> {
 			if (!EMI_LOADED) {
 				return 0;
 			}
@@ -141,7 +86,7 @@ public class GlowcaseClient implements ClientModInitializer {
 				}
 			}
 			return 0;
-		});
+		});*/
 
 		ScreenEvents.BEFORE_INIT.register(((client, sc, scaledWidth, scaledHeight) -> {
 			if (sc instanceof HandledScreen<?> hs) {
@@ -149,12 +94,12 @@ public class GlowcaseClient implements ClientModInitializer {
 			}
 		}));
 
-		if (EMI_LOADED) {
+		/*if (EMI_LOADED) {
 			ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 				EmiWorldRenderUtils.disposeCache();
 				EmiUtils.RECIPE_LIST.dispose();
 			});
-		}
+		}*/
 	}
 
 	/**

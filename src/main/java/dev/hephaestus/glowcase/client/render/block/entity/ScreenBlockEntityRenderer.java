@@ -38,7 +38,7 @@ public record ScreenBlockEntityRenderer(BlockEntityRendererFactory.Context conte
 	public static final int SCR_MAX_LINES = 19;
 
 	@Override
-	public void render(ScreenBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+	public void render(ScreenBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Vec3d cameraPos) {
 		if (entity.getWorld() == null || entity.getWorld().getBlockState(entity.getPos()).isAir()) return;
 		if (BlockEntityRenderUtil.shouldRenderPlaceholder(entity.getPos()) ||
 			(MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().player.getMainHandStack().isOf(Glowcase.TABLET_ITEM.get())))
@@ -195,7 +195,7 @@ public record ScreenBlockEntityRenderer(BlockEntityRendererFactory.Context conte
 		matrices.translate(0, textRenderer.fontHeight * 4, 0f);
 
 		MutableText hint = Text.translatableWithFallback("gui.glowcase.screen.hint." + code, "");
-		String error_msg = Text.translatable("gui.glowcase.screen.error", "" + code).append(" ").append(hint).getString();
+		String error_msg = Text.translatable("gui.glowcase.screen.error", code).append(" ").append(hint).getString();
 		lines = wrap(error_msg, font_scale, txt_width, textRenderer);
 
 		moved_lines = 0;
@@ -292,7 +292,7 @@ public record ScreenBlockEntityRenderer(BlockEntityRendererFactory.Context conte
 	}
 
 	@Override
-	public boolean rendersOutsideBoundingBox(ScreenBlockEntity blockEntity) {
+	public boolean rendersOutsideBoundingBox() {
 		return true;
 	}
 

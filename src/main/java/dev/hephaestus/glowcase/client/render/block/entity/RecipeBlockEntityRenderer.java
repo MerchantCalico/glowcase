@@ -14,11 +14,12 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
+import net.minecraft.util.math.Vec3d;
 
 public record RecipeBlockEntityRenderer(BlockEntityRendererFactory.Context context) implements BlockEntityRenderer<RecipeBlockEntity> {
 	private static final Identifier ITEM_TEXTURE = Glowcase.id("textures/item/recipe_block.png");
 
-	public void render(RecipeBlockEntity entity, float f, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+	public void render(RecipeBlockEntity entity, float f, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay, Vec3d cameraPos) {
 		if (GlowcaseClient.EMI_LOADED) {
 			matrices.push();
 			matrices.translate(0.5D, 0.5D, 0.5D);
@@ -36,9 +37,9 @@ public record RecipeBlockEntityRenderer(BlockEntityRendererFactory.Context conte
 				case CENTER -> matrices.translate(0D, 0D, 0D);
 			}
 
-			boolean rendered = EmiWorldRenderUtils.renderRecipe(matrices, entity.recipe, entity.getPos());
+//			boolean rendered = EmiWorldRenderUtils.renderRecipe(matrices, entity.recipe, entity.getPos());
 			matrices.pop();
-			if (rendered) return;
+//			if (rendered) return;
 		}
 
 		if (BlockEntityRenderUtil.shouldRenderPlaceholder(entity.getPos())) BlockEntityRenderUtil.renderPlaceholderWithBlockRotation(entity, ITEM_TEXTURE, 1F, matrices, vertexConsumers, entity.zOffset == TextBlockEntity.ZOffset.CENTER ? 0.01F : entity.zOffset == TextBlockEntity.ZOffset.FRONT ? 0.4F : -0.4F);

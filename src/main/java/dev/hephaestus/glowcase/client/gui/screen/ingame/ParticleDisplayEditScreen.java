@@ -73,8 +73,8 @@ public class ParticleDisplayEditScreen extends GlowcaseScreen {
 
 		particleId.setMaxLength(9999);
 
-		String optionsString = effectToTag(blockEntity.particle, lookup.getOps(NbtOps.INSTANCE)).asString();
-		if (optionsString.startsWith("{}")) optionsString = "";
+		String optionsString = effectToTag(blockEntity.particle, lookup.getOps(NbtOps.INSTANCE)).toString();
+		if (optionsString.equals("{}")) optionsString = "";
 
 		particleId.setText(Registries.PARTICLE_TYPE.getId(blockEntity.particle.getType()) + optionsString);
 
@@ -84,8 +84,7 @@ public class ParticleDisplayEditScreen extends GlowcaseScreen {
 			.map(Registries.PARTICLE_TYPE::getId)
 			.collect(Collectors.toList());
 
-		suggestionWidget = new SuggestionListWidget<>(this.client.textRenderer, particleId.getX(), particleId.getY() + particleId.getHeight() + 5, particleId.getWidth(), 100, 10, 4, 5,
-			(suggestion) -> particleId.setText(suggestion.toString()), Identifier::toString);
+		suggestionWidget = SuggestionListWidget.forTextFieldWithStaticSuggestions(particleId, client.textRenderer, validParticles, Identifier::toString);
 
 		particleId.setChangedListener((text) -> {
 			suggestionWidget.updateSuggestions(validParticles, text);
@@ -267,7 +266,7 @@ public class ParticleDisplayEditScreen extends GlowcaseScreen {
 			if (suggestionWidget.mouseDragged(mouseX, mouseY, button, deltaX, deltaY))
 				return true;
 		}
-		
+
 		return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
 	}
 
@@ -276,8 +275,8 @@ public class ParticleDisplayEditScreen extends GlowcaseScreen {
 		if (suggestionWidget.isMouseOver(mouseX, mouseY) && particleId.isFocused()) {
 			return suggestionWidget.mouseClicked(mouseX, mouseY, button);
 		} else {
-            suggestionWidget.updateSuggestions(new ArrayList<>(), "");
-        }
+			suggestionWidget.updateSuggestions(new ArrayList<>(), "");
+		}
 
 		return super.mouseClicked(mouseX, mouseY, button);
 	}
@@ -319,17 +318,14 @@ public class ParticleDisplayEditScreen extends GlowcaseScreen {
 
 		RegistryKey<ParticleType<?>> key = RegistryKey.of(RegistryKeys.PARTICLE_TYPE, id);
 
-		Optional<RegistryEntry.Reference<ParticleType<?>>> optionalType =
-			lookup.getWrapperOrThrow(RegistryKeys.PARTICLE_TYPE).getOptional(key);
+		Optional<RegistryEntry.Reference<ParticleType<?>>> optionalType = lookup.getOrThrow(RegistryKeys.PARTICLE_TYPE).getOptional(key);
 		if (optionalType.isEmpty()) return;
 
 		ParticleType<ParticleEffect> type = (ParticleType<ParticleEffect>) optionalType.get().value();
 
 		NbtCompound nbtCompound;
 		try {
-			nbtCompound = paramStart == -1 ?
-				new NbtCompound() :
-				StringNbtReader.parse(idText.substring(paramStart));
+			nbtCompound = paramStart == -1 ? new NbtCompound() : StringNbtReader.readCompound(idText.substring(paramStart));
 		} catch (CommandSyntaxException e) {
 			return;
 		}

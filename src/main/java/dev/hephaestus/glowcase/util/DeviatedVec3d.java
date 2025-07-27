@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.function.Supplier;
@@ -18,9 +17,9 @@ public record DeviatedVec3d(Vec3d mean, Vec3d stdDev) implements DeviatedValue<V
 	).apply(instance, DeviatedVec3d::new));
 
 	public static final PacketCodec<ByteBuf, DeviatedVec3d> PACKET_CODEC = PacketCodec.tuple(
-		PacketCodecs.VECTOR_3F.xmap(Vec3d::new, Vec3d::toVector3f),
+		Vec3d.PACKET_CODEC,
 		DeviatedVec3d::mean,
-		PacketCodecs.VECTOR_3F.xmap(Vec3d::new, Vec3d::toVector3f),
+		Vec3d.PACKET_CODEC,
 		DeviatedVec3d::stdDev,
 		DeviatedVec3d::new
 	);
